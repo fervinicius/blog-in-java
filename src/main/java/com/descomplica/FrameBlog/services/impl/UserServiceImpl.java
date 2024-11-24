@@ -5,6 +5,7 @@ import com.descomplica.FrameBlog.repositories.UserRepository;
 import com.descomplica.FrameBlog.services.UserService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -23,16 +24,19 @@ public class UserServiceImpl implements UserService {
     @Override
     public User save(final User user) {
 
-       User existingUser = userRepository.findByUserName(user.getName());
+       User existingUser = userRepository.findByUserName(user.getUsername());
 
        if (Objects.nonNull(existingUser)) {
            throw new RuntimeException("Existing User");
        }
 
-       User entity = new User(user.getUserId(), user.getName(), user.getEmail(), user.getPassword(), user.getRole());
+       String passwordHash = passwordEncoder.encode(user.getPassword());
+
+       User entity = new User(user.getUserId(), user.getName(), user.getEmail(), passwordHash, user.getRole());
+
        User newUser = userRepository.save(entity);
 
-       return new User(newUser.getUserId(), newUser.getName(), newUser.getEmail(), newUser.getPassword(), newUser.getRole());
+       return new User(newUser.getUserId(), newUser.getName(), newUser.getEmail(), newUser.getPassword(), newUser.getRole(), newUser.getUsername());
     }
 
     @Override
@@ -43,7 +47,6 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User get(final Long id) {
-
         return userRepository.findById(id).orElseThrow(
                 () -> new EntityNotFoundException("User not found")
         );
